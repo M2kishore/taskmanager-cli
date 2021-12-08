@@ -1,6 +1,7 @@
-
-let fs = require('fs');
+let fs = require("fs");
 let arguments = process.argv.slice(2);
+const taskFile = "task.txt";
+const completedFile = "completed.txt";
 class Task{
     constructor(priority,description,status = "pending"){
         this.priority = priority;
@@ -9,7 +10,6 @@ class Task{
     }
     markCompleted(){
         this.status = "completed";
-        //push it to completed.txt
     }
     toString(){
         return (this.description + " ["+this.priority+"]");
@@ -18,6 +18,7 @@ class Task{
 class TaskList{
     constructor(){
         this.tasks = [];
+        this.getContent();
     }
     addTask(task){
         let low = 0;
@@ -51,6 +52,7 @@ class TaskList{
             return;
         }
         this.tasks[index].markCompleted();
+        //update completed.txt
         console.log("Marked item as done");
     }
     updateTaskFile(){
@@ -58,6 +60,14 @@ class TaskList{
     }
     updateCompletedFile(){
         //write all the completed tasks in the completed.txt
+    }
+    getContent(){
+        fs.readFile(taskFile,"utf-8",(err,data)=>{
+            let dataArray = data.split("\n");
+            for(let task of dataArray){
+                console.log(task.split(" "));
+            }
+        })
     }
     getCompleted(){
         return this.tasks.filter((task)=>{
