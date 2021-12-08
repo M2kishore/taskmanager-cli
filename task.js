@@ -1,8 +1,9 @@
 let fs = require("fs");
 let arguments = process.argv.slice(2);
+//constants
 const taskFile = "task.txt";
 const completedFile = "completed.txt";
-//calsses
+//Classes
 class Task{
     constructor(priority,description,status = "pending"){
         this.priority = priority;
@@ -21,6 +22,7 @@ class TaskList{
         this.tasks = [];
         this.getContent();
     }
+    //adds task to file
     addTask(task){
         let low = 0;
 		let high = this.tasks.length;
@@ -33,6 +35,7 @@ class TaskList{
         this.updateTaskFile();
         console.log("Added task: "+"\""+task.description+"\""+" with priority "+task.priority);
     }
+    //delete task from file
     deleteTask(index){
         if(this.tasks.length === 0){
             console.log("no items to remove");
@@ -43,11 +46,12 @@ class TaskList{
             return;
         }
         this.tasks.splice(index-1,1);
-        //write to text file
+        //write to text files
         this.updateTaskFile();
         this.updateCompletedFile();
         console.log("Deleted task #"+index);
     }
+    //marks pending task as completed
     markCompleted(index){
         let pendingTasks = this.getPending();
         if(index <= 0 || index > pendingTasks.length){
@@ -59,6 +63,7 @@ class TaskList{
             console.log("Marked item as done.");         
         }
     }
+    //overwrites task.txt
     updateTaskFile(){
         //write the tasks in the tasks.txt
         let tasks = this.tasks;
@@ -71,6 +76,7 @@ class TaskList{
         });
 
     }
+    //overites completed.txt
     updateCompletedFile(){
         //write all the completed tasks in the completed.txt
         let completedTasks = this.getCompleted();
@@ -83,11 +89,12 @@ class TaskList{
         });
 
     }
+    // initializes the TaskList by giving status to the tasks
     getContent(){
         let completedArray = [];
         let task = new Task(-1,"");
         try{
-            if(fs.existsSync(completedFile)){
+            if(fs.existsSync(completedFile)){ //checks file existence
                 const data = fs.readFileSync(completedFile,{encoding: "utf8", flag: "r"});
                 if(data !== ""){
                     completedArray = data.split("\n");
@@ -108,6 +115,7 @@ class TaskList{
                     console.log("the file is empty");
                     return;
                 }
+                //processing the data
                 let dataArray = data.split("\n");
                 dataArray.pop();
                 for(let data of dataArray){
@@ -129,11 +137,13 @@ class TaskList{
             console.log(error)
         }
     }
+    //filters completed tasks
     getCompleted(){
         return this.tasks.filter((task)=>{
             return task.status === "completed";
         });
     }
+    //filters pending tasks
     getPending(){
         return this.tasks.filter((task)=>{
             return task.status === "pending";
@@ -142,7 +152,7 @@ class TaskList{
 }
 // initialize the list form the file
 let List = new TaskList();
-//get args
+//processing atguments
 let argLength = arguments.length;
 if(argLength === 3){
     //add
@@ -167,8 +177,8 @@ else if(argLength === 2){
         //mark completed
         List.markCompleted(index);
     }
-    if(command === "help"){
-        help(index);
+    else if(command === "add"){
+        console.log("Error: Missing tasks string. Nothing added!");
     }
 }
 else if(argLength === 1){
@@ -197,7 +207,7 @@ else if(argLength === 1){
 }else if(argLength === 0){
     help();
 }
-//Helper Function
+//Helper Functions
 //help
 function help(){
     console.log("Usage :-");
