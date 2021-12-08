@@ -2,6 +2,7 @@ let fs = require("fs");
 let arguments = process.argv.slice(2);
 const taskFile = "task.txt";
 const completedFile = "completed.txt";
+//calsses
 class Task{
     constructor(priority,description,status = "pending"){
         this.priority = priority;
@@ -30,7 +31,7 @@ class TaskList{
 	    }
         this.tasks.splice(low,0,task);
         this.updateTaskFile();
-        console.log("Added task: "+task.description+" with priority "+task.priority);
+        console.log("Added task: "+"\""+task.description+"\""+" with priority "+task.priority);
     }
     deleteTask(index){
         if(this.tasks.length === 0){
@@ -38,36 +39,95 @@ class TaskList{
             return;
         }
         if(index > this.tasks.length || index <= 0){
-            console.log("invalid id");
+            console.log("Error: task with index #"+index+" does not exist. Nothing deleted.");
             return;
         }
         this.tasks.splice(index-1,1);
         //write to text file
         this.updateTaskFile();
-        console.log("Deleted item with index "+id);
+        this.updateCompletedFile();
+        console.log("Deleted task #"+index);
     }
     markCompleted(index){
-        if(index > this.tasks.length || index <= 0){
-            console.log("invalid index");
-            return;
+        let pendingTasks = this.getPending();
+        if(index <= 0 || index > pendingTasks.length){
+            console.log("Error: no incomplete item with index #"+index+" exists.");
+        }else{
+            pendingTasks[--index].markCompleted();   
+            //update completed.txt
+            this.updateCompletedFile();
+            console.log("Marked item as done.");         
         }
-        this.tasks[index].markCompleted();
-        //update completed.txt
-        console.log("Marked item as done");
     }
     updateTaskFile(){
         //write the tasks in the tasks.txt
+        let tasks = this.tasks;
+        let taskText = "";
+        for(let task of tasks){
+            taskText += task.priority+" "+task.description + "\n";
+        }
+        fs.writeFile(taskFile,taskText,(error)=>{
+            if(error) console.log(error.message);
+        });
+
     }
     updateCompletedFile(){
         //write all the completed tasks in the completed.txt
+        let completedTasks = this.getCompleted();
+        let completedText = "";
+        for(let task of completedTasks){
+            completedText += task.description + "\n";
+        }
+        fs.writeFile(completedFile,completedText,(error)=>{
+            if(error) console.log(error.message);
+        });
+
     }
     getContent(){
-        fs.readFile(taskFile,"utf-8",(err,data)=>{
-            let dataArray = data.split("\n");
-            for(let task of dataArray){
-                console.log(task.split(" "));
+        let completedArray = [];
+        let task = new Task(-1,"");
+        try{
+            if(fs.existsSync(completedFile)){
+                const data = fs.readFileSync(completedFile,{encoding: "utf8", flag: "r"});
+                if(data !== ""){
+                    completedArray = data.split("\n");
+                }            
+            }else{
+                fs.writeFile(completedFile,"",(error)=>{
+                    if(error) console.log(error.message);
+                });
             }
-        })
+
+        }catch(error){
+            console.log(error);
+        }
+        try{
+            if(fs.existsSync(taskFile)){
+                const data = fs.readFileSync(taskFile,{encoding: "utf8", flag: "r"});
+                if(data === ""){
+                    console.log("the file is empty");
+                    return;
+                }
+                let dataArray = data.split("\n");
+                dataArray.pop();
+                for(let data of dataArray){
+                    let taskSplit = data.split(" ");
+                    let priority = Number.parseInt(taskSplit.shift());
+                    let description = taskSplit.join(" ");
+                    //check if completed
+                    task = completedArray.includes(description) ? 
+                            (new Task(priority,description,"completed")) :
+                            (new Task(priority,description));
+                    this.tasks.push(task);
+                }
+            }else{
+                fs.writeFile(taskFile,"",(error)=>{
+                    if(error) console.log(error.message);
+                });
+            }
+        }catch(error){
+            console.log(error)
+        }
     }
     getCompleted(){
         return this.tasks.filter((task)=>{
@@ -79,21 +139,10 @@ class TaskList{
             return task.status === "pending";
         })
     }
-    printList(){
-        console.log(this.tasks);
-    }
 }
 // initialize the list form the file
 let List = new TaskList();
-//test area
-let mytask = new Task(0,"This is the task");
-let mytask1 = new Task(2,"This 2 task");
-let mytask2 = new Task(1,"This 3 task");
-List.addTask(mytask);
-List.addTask(mytask1);
-List.addTask(mytask2);
-List.markCompleted(1);
-//test area
+//get args
 let argLength = arguments.length;
 if(argLength === 3){
     //add
@@ -118,8 +167,11 @@ else if(argLength === 2){
         //mark completed
         List.markCompleted(index);
     }
+    if(command === "help"){
+        help(index);
+    }
 }
-else if(argLength == 1){
+else if(argLength === 1){
     let command = arguments[0];
     //help
     if(command === "help"){
@@ -133,16 +185,28 @@ else if(argLength == 1){
     else if(command === "ls"){
         ls();
     }
+    else if(command === "add"){
+        console.log("Error: Missing tasks string. Nothing added!");
+    }
+    else if(command === "del"){
+        console.log("Error: Missing NUMBER for deleting tasks.");
+    }
+    else if(command === "done"){
+        console.log("Error: Missing NUMBER for marking tasks as done.");
+    }
+}else if(argLength === 0){
+    help();
 }
 //Helper Function
 //help
 function help(){
-    console.log("./task add 2 hello world    # Add a new item with priority 2 and text \"hello world\" to the list");
-    console.log("./task ls                   # Show incomplete priority list items sorted by priority in ascending order");
-    console.log("./task del INDEX            # Delete the incomplete item with the given index");
-    console.log("./task done INDEX           # Mark the incomplete item with the given index as complete");
-    console.log("./task help                 # Show usage");
-    console.log("./task report               # Statistics");
+    console.log("Usage :-");
+    console.log("$ ./task add 2 hello world    # Add a new item with priority 2 and text \"hello world\" to the list");
+    console.log("$ ./task ls                   # Show incomplete priority list items sorted by priority in ascending order");
+    console.log("$ ./task del INDEX            # Delete the incomplete item with the given index");
+    console.log("$ ./task done INDEX           # Mark the incomplete item with the given index as complete");
+    console.log("$ ./task help                 # Show usage");
+    console.log("$ ./task report               # Statistics");
 }
 //report
 function report(){
@@ -162,6 +226,10 @@ function report(){
 //ls
 function ls(){
     let pendingList = List.getPending();
+    if(pendingList.length === 0){
+        console.log("There are no pending tasks!");
+        return;
+    }
     let pendingLength = pendingList.length;
     for(let i=0;i<pendingLength;i++){
         console.log((i+1)+". "+ pendingList[i].description + " ["+pendingList[i].priority+"]");
