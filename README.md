@@ -1,5 +1,7 @@
 # Global Digital Corps - Software Engineering Test Problem | Priority list
 
+The following repository contains the solution for the question for selection process for GCD Fellowship program 2021-22.
+
 Thanks for applying to the Global Digital Corps!
 
 In this step we want to see how you implement a command-line (CLI) program that lets you manage your tasks.
